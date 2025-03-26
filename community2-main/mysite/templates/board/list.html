@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% load static %}
+{% load my_filter %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col">
+        <a class="btn btn-primary" href="{% url 'board:create' %}?{% query_string page=page %}">등록하기</a>
+    </div>
+    <div class="col d-flex justify-content-end">
+        <!-- 검색 -->
+        <form id="searchForm" method="get">
+            <div class="input-group">
+                <select class="form-select" name="where">
+                    <option value="title" {% if where == "title" %} selected{% endif %}>제목</option>
+                    <option value="content" {% if where == "content" %} selected{% endif %}>내용</option>
+                    <option value="all" {% if where == "all" %} selected{% endif %}>전체</option>
+                </select>
+                <input type="text" class="form-control" name="kw" placeholder="검색어" value="{{ kw }}">
+                <button type="submit" class="btn btn-primary">검색</button>
+            </div>
+        </form>
+        <!--// 검색 -->
+    </div>
+</div>
+
+<table class="table table-hover table-bordered">
+    <thead>
+        <tr class="table-primary">
+            <th>번호</th>
+            <th>제목</th>
+            <th>글쓴이</th>
+            <th>작성일시</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% if board_list %}
+        {% for board in board_list %}
+            <tr>
+                <!-- 번호 = 전체개수 - 시작인덱스 - 현재인덱스 + 1 -->
+                <td>{{ board_list.paginator.count|sub:board_list.start_index|sub:forloop.counter0|add:1 }}</td>
+                <td>
+                    {% if board.created_at|is_new %}
+                        <span class="badge bg-danger">new</span>
+                    {% endif %}
+                    <a href="{% url 'board:read' board.id %}?{% query_string page=page %}">{{ board.title }}</a>
+                    <span class="ms-3 badge bg-success" data-bs-toggle="collapse" data-bs-target="#summary{{ board.id }}" aria-expanded="true" aria-controls="summary{{ board.id }}">요약보기</span>
+                </td>
+                <td>{{ board.author.first_name|change_name }}</td>
+                <td>{{ board.created_at|date:"Y-m-d H:i" }}</td>
+            </tr>
+            <tr id="summary{{ board.id }}" class="accordion-collapse collapse">
+                <td colspan="4">{{ board.summary }}</td>
+            </tr>
+        {% endfor %}
+    {% else %}
+        <tr>
+            <td colspan="4" class="text-center">내용이 없습니다.</td>
+        </tr>
+    {% endif %}
+    </tbody>
+</table>
+
+<!-- 페이징 -->
+<nav>
+    <ul class="pagination">
+        <!-- 처음 -->
+        {% if board_list.number > 4 %}
+        <li class="page-item">
+            <a class="page-link" href="?{% query_string page=1 %}">처음</a>
+        </li>
+        {% endif %}
+        <!--// 처음 -->
+
+        <!-- 이전 페이지 -->
+        {% if board_list.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?{% query_string page=board_list.previous_page_number %}">이전</a>
+            </li>
+        {% endif %}
+        <!--// 이전 페이지 -->
+        
+        <!-- 페이지 리스트 -->
+        {% for page_number in board_list.paginator.page_range %}
+            {% if page_number >= board_list.number|add:-3 and page_number <= board_list.number|add:3 %}
+                {% if page_number == board_list.number %}
+                <li class="page-item active">
+                    <a class="page-link">{{ page_number }}</a>
+                </li>
+                {% else %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% query_string page=page_number %}">{{ page_number }}</a>
+                </li>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        <!--// 페이지 리스트 -->
+      
+        <!-- 다음 페이지 -->
+        {% if board_list.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?{% query_string page=board_list.next_page_number %}">다음</a>
+            </li>
+        {% endif %}
+        <!--// 다음 페이지 -->
+
+        <!-- 마지막 -->
+        {% if board_list.number < board_list.paginator.num_pages|add:-3 %}
+        <li class="page-item">
+            <a class="page-link" href="?{% query_string page=board_list.paginator.num_pages %}">마지막</a>
+        </li>
+        <!--// 마지막 -->
+        {% endif %}
+    </ul>
+</nav>
+<!-- // 페이징 -->
+{% endblock %}
